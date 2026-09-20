@@ -1,0 +1,4 @@
+# Core dependencies: standard library only
+# System requirement: exiftool (brew install exiftool)
+# Optional enhancements:
+rich>=13.0.0
