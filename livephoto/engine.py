@@ -1,6 +1,6 @@
 """
-Core LivePhoto Synthesis Engine.
-Guarantees bypass of iOS 17+ Lock Screen Live Wallpaper validation.
+Core LivePhoto Synthesis Engine (Universal Cross-Platform: Linux, macOS, Docker).
+Guarantees bypass of iOS 17+ / iOS 27 Lock Screen Live Wallpaper validation.
 """
 
 import os
@@ -33,11 +33,21 @@ class LivePhotoInputError(ValueError):
 
 
 class LivePhotoEngine:
-    def __init__(self, exiftool_path: Optional[str] = None):
+    def __init__(self, exiftool_path: Optional[str] = None, ffmpeg_path: Optional[str] = None):
         self.exiftool_path = exiftool_path or self._find_binary("exiftool")
         if not self.exiftool_path:
-            raise RuntimeError("exiftool not found! Please install exiftool or add it to PATH.")
-        self.helper_bin = self._ensure_synthesizer_binary()
+            raise RuntimeError(
+                "exiftool not found! Please install exiftool:\n"
+                "  - Linux: apt-get install -y libimage-exiftool-perl\n"
+                "  - macOS: brew install exiftool"
+            )
+        self.ffmpeg_path = ffmpeg_path or self._find_binary("ffmpeg")
+        if not self.ffmpeg_path:
+            raise RuntimeError(
+                "ffmpeg not found! Please install ffmpeg:\n"
+                "  - Linux: apt-get install -y ffmpeg\n"
+                "  - macOS: brew install ffmpeg"
+            )
 
     @staticmethod
     def _find_binary(name: str) -> Optional[str]:
@@ -45,50 +55,19 @@ class LivePhotoEngine:
         p = shutil.which(name)
         if p:
             return p
-        # Check common macOS local paths
+        # Check common Linux and macOS system paths
+        user_home = str(Path.home())
         candidates = [
-            f"/Users/{os.getenv('USER')}/.local/bin/{name}",
-            f"/opt/homebrew/bin/{name}",
-            f"/usr/local/bin/{name}",
+            f"{user_home}/.local/bin/{name}",
             f"/usr/bin/{name}",
+            f"/usr/local/bin/{name}",
+            f"/opt/homebrew/bin/{name}",
+            f"/bin/{name}",
         ]
         for c in candidates:
             if os.path.exists(c) and os.access(c, os.X_OK):
                 return c
         return None
-
-    def _ensure_synthesizer_binary(self) -> str:
-        """
-        Compiles synthesize.m on macOS if needed, and caches the binary.
-        """
-        cache_dir = Path.home() / ".cache" / "livephoto"
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        bin_path = cache_dir / "synthesize_helper"
-
-        source_m = Path(__file__).parent / "synthesize.m"
-        if not source_m.exists():
-            raise FileNotFoundError(f"Missing synthesizer source: {source_m}")
-
-        # Recompile if binary missing or source is newer
-        if not bin_path.exists() or bin_path.stat().st_mtime < source_m.stat().st_mtime:
-            clang_bin = shutil.which("clang") or "/usr/bin/clang"
-            cmd = [
-                clang_bin,
-                "-fobjc-arc",
-                "-O2",
-                "-framework", "Foundation",
-                "-framework", "AVFoundation",
-                "-framework", "CoreMedia",
-                "-framework", "ImageIO",
-                "-framework", "CoreGraphics",
-                str(source_m),
-                "-o", str(bin_path)
-            ]
-            res = subprocess.run(cmd, capture_output=True, text=True)
-            if res.returncode != 0:
-                raise RuntimeError(f"Failed to compile synthesize.m:\n{res.stderr}")
-
-        return str(bin_path)
 
     def validate_input(self, input_path: str) -> Path:
         p = Path(input_path).resolve()
@@ -126,6 +105,7 @@ class LivePhotoEngine:
     ) -> Dict[str, Any]:
         """
         Converts input video into a pair of (.JPG, .MOV) Live Photo wallpaper assets.
+        Universal cross-platform implementation using FFmpeg and ExifTool.
         """
         src_path = self.validate_input(input_video_path)
         out_directory = Path(output_dir).resolve() if output_dir else src_path.parent
@@ -140,26 +120,65 @@ class LivePhotoEngine:
         # 1. Unpack pure data capsule
         capsule_mov, capsule_jpg = unpack_capsule()
 
-        # 2. Run native AVFoundation synthesizer
-        cmd_synth = [
-            self.helper_bin,
-            str(src_path),
-            capsule_mov,
-            str(out_mov),
-            str(out_jpg),
-            live_uuid,
+        # 2. Extract initial frame at t=0 using FFmpeg
+        cmd_frame = [
+            self.ffmpeg_path,
+            "-y",
+            "-ss", "0",
+            "-i", str(src_path),
+            "-frames:v", "1",
+            "-q:v", "2",
+            str(out_jpg)
         ]
-        res = subprocess.run(cmd_synth, capture_output=True, text=True)
-        if res.returncode != 0:
-            raise RuntimeError(f"Synthesizer failed:\n{res.stderr}")
+        res_frame = subprocess.run(cmd_frame, capture_output=True, text=True)
+        if res_frame.returncode != 0:
+            raise RuntimeError(f"FFmpeg frame extraction failed:\n{res_frame.stderr}")
 
-        # 3. Read exact extracted frame dimensions
+        # 3. Mux video with capsule mebx motion tracks via passthrough copy
+        cmd_mux = [
+            self.ffmpeg_path,
+            "-y",
+            "-i", str(src_path),
+            "-i", capsule_mov,
+            "-map", "0:v",
+            "-map", "0:a?",
+            "-map", "1:d?",
+            "-c", "copy",
+            "-movflags", "+faststart",
+            str(out_mov)
+        ]
+        res_mux = subprocess.run(cmd_mux, capture_output=True, text=True)
+        if res_mux.returncode != 0:
+            raise RuntimeError(f"FFmpeg stream mux failed:\n{res_mux.stderr}")
+
+        # 4. Copy authentic Apple QuickTime metadata & motion keys from capsule to MOV
+        cmd_mov_keys = [
+            self.exiftool_path,
+            "-overwrite_original",
+            "-TagsFromFile", capsule_mov,
+            "-Keys:all",
+            str(out_mov)
+        ]
+        subprocess.run(cmd_mov_keys, capture_output=True, text=True)
+
+        # 5. Inject QuickTime ContentIdentifier UUID
+        cmd_mov_uuid = [
+            self.exiftool_path,
+            "-overwrite_original",
+            f"-QuickTime:ContentIdentifier={live_uuid}",
+            str(out_mov)
+        ]
+        res_uuid = subprocess.run(cmd_mov_uuid, capture_output=True, text=True)
+        if res_uuid.returncode != 0:
+            raise RuntimeError(f"ExifTool MOV ContentIdentifier injection failed:\n{res_uuid.stderr}")
+
+        # 6. Read exact extracted frame dimensions
         w_cmd = [self.exiftool_path, "-s", "-s", "-s", "-ImageWidth", str(out_jpg)]
         h_cmd = [self.exiftool_path, "-s", "-s", "-s", "-ImageHeight", str(out_jpg)]
         width = subprocess.check_output(w_cmd, text=True).strip()
         height = subprocess.check_output(h_cmd, text=True).strip()
 
-        # 4. Step A: Copy full camera profile from capsule
+        # 7. Copy full camera profile from capsule to JPG
         cmd_copy = [
             self.exiftool_path,
             "-overwrite_original",
@@ -171,7 +190,7 @@ class LivePhotoEngine:
         if res_copy.returncode != 0:
             raise RuntimeError(f"ExifTool JPG copy failed:\n{res_copy.stderr}")
 
-        # 4. Step B: Strictly set LivePhoto UUID, orientation, dimensions, clean thumbnails, and GPS
+        # 8. Set LivePhoto UUID, orientation, dimensions, clean thumbnails, and GPS on JPG
         cmd_meta = [
             self.exiftool_path,
             "-overwrite_original",
@@ -208,7 +227,7 @@ class LivePhotoEngine:
         if res_meta.returncode != 0:
             raise RuntimeError(f"ExifTool JPG injection failed:\n{res_meta.stderr}")
 
-        # 5. Handle GPS on MOV
+        # 9. Handle GPS on MOV
         if no_gps:
             cmd_mov_gps = [
                 self.exiftool_path,

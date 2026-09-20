@@ -30,6 +30,3 @@ livephoto = "livephoto.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["livephoto*"]
-
-[tool.setuptools.package-data]
-livephoto = ["synthesize.m"]

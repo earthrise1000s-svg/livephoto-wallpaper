@@ -50,6 +50,11 @@
 
 ### 第三步：后台自动无损转换
 
+> [!NOTE]
+> **环境跨平台自愈（Linux / Docker / 云端沙箱）**：  
+> 底层转换引擎采用全通用的 Python + FFmpeg + ExifTool，已彻底移除任何 macOS/AVFoundation 依赖，支持任意 Linux 云端环境。若沙箱环境未预装，Agent 可直接执行安装：  
+> `apt-get update && apt-get install -y ffmpeg libimage-exiftool-perl`
+
 收到视频文件后，Agent 自动调用后台转换引擎：
 ```bash
 python3 -m livephoto.cli "<input_video_path>" -o "<output_dir>" -z

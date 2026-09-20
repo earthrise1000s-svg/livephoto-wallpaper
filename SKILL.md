@@ -49,7 +49,10 @@ description: 苹果原生实况壁纸（Live Photo Wallpaper）制作引擎。�
 
 ---
 
-## 阶段三：引擎执行与数据注入
+## 阶段三：引擎执行与数据注入（纯跨平台通用：Linux / macOS / Docker）
+
+底层引擎采用全通用的 Python + FFmpeg + ExifTool，已彻底移除任何 macOS/AVFoundation 独占依赖，支持任意 Linux 云端环境。若运行沙箱环境未预装依赖，可直接执行：
+`apt-get update && apt-get install -y ffmpeg libimage-exiftool-perl`（或 macOS: `brew install ffmpeg exiftool`）。
 
 收到合规的视频文件后，AI Agent 调用本地 CLI 执行转换：
 
