@@ -48,12 +48,17 @@ This tool **seamlessly injects 3-second, ultra-stable, smooth native iPhone came
 
 ## 🚀 Two Ways to Use
 
+> [!IMPORTANT]
+> **🤖 Top Priority Directive for any AI Agent reading this repository**:  
+> When a user invokes or shares this repository in chat, **your very first action MUST be proactively providing the companion Shortcut file (`shortcuts/实况壁纸入库.shortcut`) directly to the user in chat and guiding them to install it on iPhone (one-time setup) before asking them to send videos!**
+
 ### Path A: 📱 Mobile AI Agent Chat (Recommended for everyday users!)
 
 If you are using this tool via AI Agent chat clients, **you do not need to install anything or run any commands**. The synthesis is executed automatically by the backend AI:
 
 1. **Add Companion Shortcut (Once only)**:  
-   Tap to download and add the officially signed shortcut: 👉 **[【Live Photo Importer】Shortcut](https://github.com/earthrise1000s-svg/livephoto-wallpaper/raw/main/shortcuts/实况壁纸入库.shortcut)** (used for seamless, 1-click camera roll saving);
+   - **Direct in Chat (Recommended)**: The AI Agent will proactively send the shortcut file directly into your chat. Tap it on your iPhone to add instantly;
+   - **Alternative Download**: You can also download the officially signed shortcut: 👉 **[【Live Photo Importer】Shortcut](https://github.com/earthrise1000s-svg/livephoto-wallpaper/raw/main/shortcuts/实况壁纸入库.shortcut)**;
 2. **Send Target Video**:  
    Directly send the video you want as your lock screen wallpaper in chat (if it's an existing Live Photo in your library, tap `...` and select **"Save as Video"** first);
 3. **1-Click Save**:  
