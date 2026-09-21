@@ -17,32 +17,29 @@
 
 ---
 
-## ⚙️ 快捷指令内部完整动作链（智能双模架构）
+## ⚙️ 快捷指令内部完整动作链（URL 全自动流式入库）
 
-本快捷指令已预置智能双模分支，自适应网络链接与本地文件两种场景，零报错闭环：
+快捷指令采用纯 URL 驱动，**用户完全无需手动下载 ZIP 压缩包**，全流程在后台静默全自动完成：
 
 ```text
-1. 接收输入 (URL 文本、网络链接 或 本地 ZIP 文件)
+1. 接收输入 (接收 AI 提供的壁纸包 URL 链接)
        │
        ▼
 2. 识别链接 (is.workflow.actions.detect.link)
        │
-   ┌───┴───────────────────────────────┐
-   ▼                                   ▼
-【分支 A：检测到 URL 链接】        【分支 B：本地已下载的 ZIP 文件】
-自动调用 downloadurl 下载压缩包    直接读取传入的 ZIP 文件实体
-   │                                   │
-   └───────────────┬───────────────────┘
-                   ▼
-3. 解压实况 Bundle (is.workflow.actions.unarchive)
-   (自动识别并解压出 .pvt/ 苹果原生实况包与配对 .JPG/.MOV)
-                   │
-                   ▼
-4. 存入系统相册 (is.workflow.actions.savetocameraroll)
-   (识别 com.apple.live-photo 类型，原子级存入相册)
-                   │
-                   ▼
-5. 成功通知提醒 (is.workflow.actions.notification)
+       ▼
+3. 后台静默下载压缩包 (is.workflow.actions.downloadurl)
+       │
+       ▼
+4. 自动解压实况 Bundle (is.workflow.actions.unarchive)
+   (自动释放 .pvt/ 苹果原生实况包与配对 .JPG/.MOV)
+       │
+       ▼
+5. 原子级存入系统相册 (is.workflow.actions.savetocameraroll)
+   (识别 com.apple.live-photo 类型，直接写入相册底表)
+       │
+       ▼
+6. 成功弹窗提示 (is.workflow.actions.notification)
    (弹窗提示：“实况壁纸入库成功 🎉，已存入相册，可前往【设置 -> 墙纸】应用”)
 ```
 
@@ -50,10 +47,13 @@
 
 ## 🔗 自动化呼起 Magic Link
 
-AI Agent 在生成实况壁纸压缩包后，可通过 Safari 打开如下协议链接，自动触发已安装的快捷指令并完成入库：
+AI Agent 生成实况壁纸包后，直接向用户提供专属唤醒链接。用户在 iPhone 轻点链接即可全自动入库：
 
 ```text
 shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_DIRECT_URL>
 ```
 
-无论是在手机聊天窗口直接轻点上述 Magic Link，还是把 ZIP 文件下载到本地后点击「分享」选择快捷指令，两种方式均已 100% 完美支持！
+**极简闭环体验**：
+- 用户**无需点击下载文件**；
+- 用户**无需打开 iOS 文件 App**；
+- 仅需在聊天窗口点击一下链接（或长按复制 URL 打开快捷指令），实况壁纸瞬间存入相册！
