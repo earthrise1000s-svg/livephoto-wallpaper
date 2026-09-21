@@ -79,15 +79,8 @@ def main():
             no_gps=args.no_gps,
             custom_gps=custom_gps,
             create_zip=True,  # Always generate zip
+            keep_loose=args.keep_loose,
         )
-
-        # Auto-clean loose JPG and MOV files (only keep zip)
-        if not args.keep_loose and res["zip_path"]:
-            for loose_file in [res["jpg_path"], res["mov_path"]]:
-                try:
-                    os.remove(loose_file)
-                except OSError:
-                    pass
 
         print("\n✨ 合成成功！")
         print(f"  📦 壁纸包: {res['zip_path']}")

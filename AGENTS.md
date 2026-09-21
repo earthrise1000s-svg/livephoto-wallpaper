@@ -51,15 +51,16 @@
 ### 第三步：后台自动无损转换
 
 > [!NOTE]
-> **环境跨平台自愈（Linux / Docker / 云端沙箱）**：  
-> 底层转换引擎采用全通用的 Python + FFmpeg + ExifTool，已彻底移除任何 macOS/AVFoundation 依赖，支持任意 Linux 云端环境。若沙箱环境未预装，Agent 可直接执行安装：  
+> **环境跨平台自愈与代码更新（Linux / Docker / 云端沙箱）**：  
+> 1. 若当前会话之前已克隆过本仓库，执行前请务必拉取最新代码：`git pull origin main`；  
+> 2. 底层转换引擎采用全通用的 Python + FFmpeg + ExifTool，已彻底移除任何 macOS/AVFoundation 依赖，支持任意 Linux 云端环境。若沙箱环境未预装依赖，可直接执行：  
 > `apt-get update && apt-get install -y ffmpeg libimage-exiftool-perl`
 
 收到视频文件后，Agent 自动调用后台转换引擎：
 ```bash
-python3 -m livephoto.cli "<input_video_path>" -o "<output_dir>" -z
+python3 -m livephoto.cli "<input_video_path>" -o "<output_dir>"
 ```
-引擎默认强制生成 `.zip` 壁纸包（内含配对的 JPG + MOV），零散的独立文件会自动清理。
+> 底层引擎已完全隔离并在内存/临时目录完成封装，物理上**仅在输出目录生成唯一的 `.zip` 壁纸包**，绝不会产出任何散落的 JPG/MOV 散件。
 
 ---
 
@@ -67,18 +68,19 @@ python3 -m livephoto.cli "<input_video_path>" -o "<output_dir>" -z
 
 > [!IMPORTANT]
 > **铁律：严禁向用户单独展示或发送 `.JPG` 和 `.MOV` 散件文件！**  
-> 普通用户面对散件文件会不知所措，且手动分别保存会被 iOS 识别为两份独立文件，无法触发实况壁纸效果。  
-> **无论用户以何种方式发起（首次/非首次/直接丢视频），最终交付界面有且仅有以下内容**：
+> 交付产物**有且仅有单个 `.zip` 压缩包**。普通用户面对散件文件会不知所措，且分别保存会被 iOS 识别为两份独立静态文件，无法触发锁屏动态壁纸。
 
-合成完成后，Agent **必须且仅可**输出以下模板：
+合成完成后，Agent 发送单个 `.zip` 壁纸包，并输出以下极简引导：
+
 ```text
 ✨ 实况壁纸制作完成！
 
-👉 【一键存入 iPhone 相册】
-shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_DOWNLOAD_URL>
+📦 您的专属实况壁纸包已生成（见上方附件，仅此单个 .zip 文件）
 
-还没装快捷指令？👉 【点此 1 秒添加】
-shortcuts://import-shortcut?url=<SHORTCUT_RAW_URL>&name=实况壁纸入库
+📲 【一秒存入 iPhone 相册】：
+在 iPhone 上轻点刚才收到的 .zip 压缩包 -> 点击「分享」图标 -> 选择【实况壁纸入库】快捷指令，即可自动无痕入库！
+
+还没安装快捷指令？👉 轻点我发送的【实况壁纸入库.shortcut】文件一键添加。
 
 存入成功后，前往 iPhone【设置 -> 墙纸】长按即可体验完美动态锁屏壁纸！
 ```

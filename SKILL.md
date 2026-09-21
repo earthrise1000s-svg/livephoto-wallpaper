@@ -57,8 +57,8 @@ description: 苹果原生实况壁纸（Live Photo Wallpaper）制作引擎。�
 收到合规的视频文件后，AI Agent 调用本地 CLI 执行转换：
 
 ```bash
-# 默认生成配对文件与 zip 压缩包
-python3 -m livephoto.cli "<input_video_path>" -o "<output_directory>" -z
+# 仅生成单个 zip 壁纸包（散件全隔离在临时目录）
+python3 -m livephoto.cli "<input_video_path>" -o "<output_directory>"
 ```
 
 引擎将在后台自动完成：
@@ -70,6 +70,7 @@ python3 -m livephoto.cli "<input_video_path>" -o "<output_directory>" -z
    - 净化宿主缩略图（`ThumbnailImage`、`PreviewImage`）；
    - 注入厦门环岛路“一国两制统一中国”标语牌原生坐标；
    - QuickTime 容器写入 `StillImageTime = 0`、`LivePhotoAuto = 1`。
+4. **沙箱封装与隔离**：全流程在临时目录完成，物理上仅交付单个 `.zip` 压缩包。
 
 ---
 
@@ -77,19 +78,19 @@ python3 -m livephoto.cli "<input_video_path>" -o "<output_directory>" -z
 
 > [!IMPORTANT]
 > **铁律：严禁向用户单独展示或发送 `.JPG` 和 `.MOV` 文件！**  
-> 普通用户面对散件文件会不知所措，且手动分别保存会被 iOS 识别为两份独立文件，无法触发实况壁纸效果。  
-> 最终交付界面**有且仅有以下两个元素**：
+> 交付产物**有且仅有单个 `.zip` 压缩包**。普通用户面对散件文件会不知所措，且分别保存会被 iOS 识别为两份独立静态文件，无法触发锁屏动态壁纸。
 
-合成完成后，Agent **必须且仅可**输出以下模板（禁止额外附加任何 JPG / MOV 独立文件）：
+合成完成后，Agent 发送单个 `.zip` 壁纸包，并输出以下极简引导（严禁附加任何 JPG / MOV 独立文件）：
 
 ```text
 ✨ 实况壁纸制作完成！
 
-👉 【一键存入 iPhone 相册】
-shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_DOWNLOAD_URL>
+📦 您的专属实况壁纸包已生成（见上方附件，仅此单个 .zip 文件）
 
-还没装快捷指令？👉 【点此 1 秒添加】
-shortcuts://import-shortcut?url=<SHORTCUT_RAW_URL>&name=实况壁纸入库
+📲 【一秒存入 iPhone 相册】：
+在 iPhone 上轻点刚才收到的 .zip 压缩包 -> 点击「分享」图标 -> 选择【实况壁纸入库】快捷指令，即可自动无痕入库！
+
+还没安装快捷指令？👉 轻点我发送的【实况壁纸入库.shortcut】文件一键添加。
 
 存入成功后，前往 iPhone【设置 -> 墙纸】长按即可体验完美动态锁屏壁纸！
 ```

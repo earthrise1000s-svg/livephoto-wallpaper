@@ -45,14 +45,27 @@ class TestLivePhotoWallpaper(unittest.TestCase):
             output_dir=self.test_dir,
             output_name="output_live",
             create_zip=True,
+            keep_loose=False,
         )
 
-        self.assertTrue(os.path.exists(res["jpg_path"]))
-        self.assertTrue(os.path.exists(res["mov_path"]))
+        self.assertIsNone(res["jpg_path"])
+        self.assertIsNone(res["mov_path"])
         self.assertTrue(os.path.exists(res["zip_path"]))
         self.assertIsNotNone(res["uuid"])
         self.assertEqual(res["width"], 886)
         self.assertEqual(res["height"], 1920)
+
+        # Test keep_loose=True
+        res_loose = self.engine.convert(
+            input_video_path=str(sample_video),
+            output_dir=self.test_dir,
+            output_name="output_loose",
+            create_zip=True,
+            keep_loose=True,
+        )
+        self.assertTrue(os.path.exists(res_loose["jpg_path"]))
+        self.assertTrue(os.path.exists(res_loose["mov_path"]))
+        self.assertTrue(os.path.exists(res_loose["zip_path"]))
 
 
 if __name__ == "__main__":

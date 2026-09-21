@@ -101,169 +101,184 @@ class LivePhotoEngine:
         custom_uuid: Optional[str] = None,
         no_gps: bool = False,
         custom_gps: Optional[Tuple[float, float]] = None,
-        create_zip: bool = False,
+        create_zip: bool = True,
+        keep_loose: bool = False,
     ) -> Dict[str, Any]:
         """
-        Converts input video into a pair of (.JPG, .MOV) Live Photo wallpaper assets.
-        Universal cross-platform implementation using FFmpeg and ExifTool.
+        Converts input video into Live Photo wallpaper assets.
+        By default (keep_loose=False), intermediate JPG/MOV files are kept in a temp
+        directory and ONLY a clean .zip package is placed into output_dir.
         """
+        import tempfile
+
         src_path = self.validate_input(input_video_path)
         out_directory = Path(output_dir).resolve() if output_dir else src_path.parent
         out_directory.mkdir(parents=True, exist_ok=True)
 
         base_stem = output_name or src_path.stem
-        out_jpg = out_directory / f"{base_stem}.JPG"
-        out_mov = out_directory / f"{base_stem}.MOV"
 
-        live_uuid = custom_uuid or str(uuid.uuid4()).upper()
+        with tempfile.TemporaryDirectory(prefix="livephoto_build_") as tmpdir:
+            tmp_path = Path(tmpdir)
+            tmp_jpg = tmp_path / f"{base_stem}.JPG"
+            tmp_mov = tmp_path / f"{base_stem}.MOV"
 
-        # 1. Unpack pure data capsule
-        capsule_mov, capsule_jpg = unpack_capsule()
+            live_uuid = custom_uuid or str(uuid.uuid4()).upper()
 
-        # 2. Extract initial frame at t=0 using FFmpeg
-        cmd_frame = [
-            self.ffmpeg_path,
-            "-y",
-            "-ss", "0",
-            "-i", str(src_path),
-            "-frames:v", "1",
-            "-q:v", "2",
-            str(out_jpg)
-        ]
-        res_frame = subprocess.run(cmd_frame, capture_output=True, text=True)
-        if res_frame.returncode != 0:
-            raise RuntimeError(f"FFmpeg frame extraction failed:\n{res_frame.stderr}")
+            # 1. Unpack pure data capsule
+            capsule_mov, capsule_jpg = unpack_capsule()
 
-        # 3. Mux video with capsule mebx motion tracks via passthrough copy
-        cmd_mux = [
-            self.ffmpeg_path,
-            "-y",
-            "-i", str(src_path),
-            "-i", capsule_mov,
-            "-map", "0:v",
-            "-map", "0:a?",
-            "-map", "1:d?",
-            "-c", "copy",
-            "-movflags", "+faststart",
-            str(out_mov)
-        ]
-        res_mux = subprocess.run(cmd_mux, capture_output=True, text=True)
-        if res_mux.returncode != 0:
-            raise RuntimeError(f"FFmpeg stream mux failed:\n{res_mux.stderr}")
+            # 2. Extract initial frame at t=0 using FFmpeg
+            cmd_frame = [
+                self.ffmpeg_path,
+                "-y",
+                "-ss", "0",
+                "-i", str(src_path),
+                "-frames:v", "1",
+                "-q:v", "2",
+                str(tmp_jpg)
+            ]
+            res_frame = subprocess.run(cmd_frame, capture_output=True, text=True)
+            if res_frame.returncode != 0:
+                raise RuntimeError(f"FFmpeg frame extraction failed:\n{res_frame.stderr}")
 
-        # 4. Copy authentic Apple QuickTime metadata & motion keys from capsule to MOV
-        cmd_mov_keys = [
-            self.exiftool_path,
-            "-overwrite_original",
-            "-TagsFromFile", capsule_mov,
-            "-Keys:all",
-            str(out_mov)
-        ]
-        subprocess.run(cmd_mov_keys, capture_output=True, text=True)
+            # 3. Mux video with capsule mebx motion tracks via passthrough copy
+            cmd_mux = [
+                self.ffmpeg_path,
+                "-y",
+                "-i", str(src_path),
+                "-i", capsule_mov,
+                "-map", "0:v",
+                "-map", "0:a?",
+                "-map", "1:d?",
+                "-c", "copy",
+                "-movflags", "+faststart",
+                str(tmp_mov)
+            ]
+            res_mux = subprocess.run(cmd_mux, capture_output=True, text=True)
+            if res_mux.returncode != 0:
+                raise RuntimeError(f"FFmpeg stream mux failed:\n{res_mux.stderr}")
 
-        # 5. Inject QuickTime ContentIdentifier UUID
-        cmd_mov_uuid = [
-            self.exiftool_path,
-            "-overwrite_original",
-            f"-QuickTime:ContentIdentifier={live_uuid}",
-            str(out_mov)
-        ]
-        res_uuid = subprocess.run(cmd_mov_uuid, capture_output=True, text=True)
-        if res_uuid.returncode != 0:
-            raise RuntimeError(f"ExifTool MOV ContentIdentifier injection failed:\n{res_uuid.stderr}")
+            # 4. Copy authentic Apple QuickTime metadata & motion keys from capsule to MOV
+            cmd_mov_keys = [
+                self.exiftool_path,
+                "-overwrite_original",
+                "-TagsFromFile", capsule_mov,
+                "-Keys:all",
+                str(tmp_mov)
+            ]
+            subprocess.run(cmd_mov_keys, capture_output=True, text=True)
 
-        # 6. Read exact extracted frame dimensions
-        w_cmd = [self.exiftool_path, "-s", "-s", "-s", "-ImageWidth", str(out_jpg)]
-        h_cmd = [self.exiftool_path, "-s", "-s", "-s", "-ImageHeight", str(out_jpg)]
-        width = subprocess.check_output(w_cmd, text=True).strip()
-        height = subprocess.check_output(h_cmd, text=True).strip()
+            # 5. Inject QuickTime ContentIdentifier UUID
+            cmd_mov_uuid = [
+                self.exiftool_path,
+                "-overwrite_original",
+                f"-QuickTime:ContentIdentifier={live_uuid}",
+                str(tmp_mov)
+            ]
+            res_uuid = subprocess.run(cmd_mov_uuid, capture_output=True, text=True)
+            if res_uuid.returncode != 0:
+                raise RuntimeError(f"ExifTool MOV ContentIdentifier injection failed:\n{res_uuid.stderr}")
 
-        # 7. Copy full camera profile from capsule to JPG
-        cmd_copy = [
-            self.exiftool_path,
-            "-overwrite_original",
-            "-TagsFromFile", capsule_jpg,
-            "-all:all", "-all:all>all:all",
-            str(out_jpg)
-        ]
-        res_copy = subprocess.run(cmd_copy, capture_output=True, text=True)
-        if res_copy.returncode != 0:
-            raise RuntimeError(f"ExifTool JPG copy failed:\n{res_copy.stderr}")
+            # 6. Read exact extracted frame dimensions
+            w_cmd = [self.exiftool_path, "-s", "-s", "-s", "-ImageWidth", str(tmp_jpg)]
+            h_cmd = [self.exiftool_path, "-s", "-s", "-s", "-ImageHeight", str(tmp_jpg)]
+            width = subprocess.check_output(w_cmd, text=True).strip()
+            height = subprocess.check_output(h_cmd, text=True).strip()
 
-        # 8. Set LivePhoto UUID, orientation, dimensions, clean thumbnails, and GPS on JPG
-        cmd_meta = [
-            self.exiftool_path,
-            "-overwrite_original",
-            f"-MakerNotes:ContentIdentifier={live_uuid}",
-            f"-ExifImageWidth={width}",
-            f"-ExifImageHeight={height}",
-            "-Orientation#=1",
-            "-ThumbnailImage=", "-PreviewImage=",
-        ]
+            # 7. Copy full camera profile from capsule to JPG
+            cmd_copy = [
+                self.exiftool_path,
+                "-overwrite_original",
+                "-TagsFromFile", capsule_jpg,
+                "-all:all", "-all:all>all:all",
+                str(tmp_jpg)
+            ]
+            res_copy = subprocess.run(cmd_copy, capture_output=True, text=True)
+            if res_copy.returncode != 0:
+                raise RuntimeError(f"ExifTool JPG copy failed:\n{res_copy.stderr}")
 
-        # GPS Handling
-        if no_gps:
-            cmd_meta.extend(["-GPS*="])
-        else:
-            lat = custom_gps[0] if custom_gps else DEFAULT_GPS_LAT
-            lon = custom_gps[1] if custom_gps else DEFAULT_GPS_LON
-            lat_ref = "N" if lat >= 0 else "S"
-            lon_ref = "E" if lon >= 0 else "W"
-            cmd_meta.extend([
-                f"-GPSLatitude={abs(lat)}", f"-GPSLatitudeRef={lat_ref}",
-                f"-GPSLongitude={abs(lon)}", f"-GPSLongitudeRef={lon_ref}",
-                f"-GPSAltitude={DEFAULT_GPS_ALT}", "-GPSAltitudeRef=0",
-            ])
-            if not custom_gps:
+            # 8. Set LivePhoto UUID, orientation, dimensions, clean thumbnails, and GPS on JPG
+            cmd_meta = [
+                self.exiftool_path,
+                "-overwrite_original",
+                f"-MakerNotes:ContentIdentifier={live_uuid}",
+                f"-ExifImageWidth={width}",
+                f"-ExifImageHeight={height}",
+                "-Orientation#=1",
+                "-ThumbnailImage=", "-PreviewImage=",
+            ]
+
+            # GPS Handling
+            if no_gps:
+                cmd_meta.extend(["-GPS*="])
+            else:
+                lat = custom_gps[0] if custom_gps else DEFAULT_GPS_LAT
+                lon = custom_gps[1] if custom_gps else DEFAULT_GPS_LON
+                lat_ref = "N" if lat >= 0 else "S"
+                lon_ref = "E" if lon >= 0 else "W"
                 cmd_meta.extend([
-                    f"-XMP-iptcCore:Location={DEFAULT_LOCATION_NAME}",
-                    f"-XMP-photoshop:City={DEFAULT_CITY}",
-                    f"-XMP-photoshop:State={DEFAULT_STATE}",
-                    f"-XMP-photoshop:Country={DEFAULT_COUNTRY}",
+                    f"-GPSLatitude={abs(lat)}", f"-GPSLatitudeRef={lat_ref}",
+                    f"-GPSLongitude={abs(lon)}", f"-GPSLongitudeRef={lon_ref}",
+                    f"-GPSAltitude={DEFAULT_GPS_ALT}", "-GPSAltitudeRef=0",
                 ])
+                if not custom_gps:
+                    cmd_meta.extend([
+                        f"-XMP-iptcCore:Location={DEFAULT_LOCATION_NAME}",
+                        f"-XMP-photoshop:City={DEFAULT_CITY}",
+                        f"-XMP-photoshop:State={DEFAULT_STATE}",
+                        f"-XMP-photoshop:Country={DEFAULT_COUNTRY}",
+                    ])
 
-        cmd_meta.append(str(out_jpg))
-        res_meta = subprocess.run(cmd_meta, capture_output=True, text=True)
-        if res_meta.returncode != 0:
-            raise RuntimeError(f"ExifTool JPG injection failed:\n{res_meta.stderr}")
+            cmd_meta.append(str(tmp_jpg))
+            res_meta = subprocess.run(cmd_meta, capture_output=True, text=True)
+            if res_meta.returncode != 0:
+                raise RuntimeError(f"ExifTool JPG injection failed:\n{res_meta.stderr}")
 
-        # 9. Handle GPS on MOV
-        if no_gps:
-            cmd_mov_gps = [
-                self.exiftool_path,
-                "-overwrite_original",
-                "-GPSCoordinates=",
-                str(out_mov)
-            ]
-            subprocess.run(cmd_mov_gps, capture_output=True, text=True)
-        else:
-            lat = custom_gps[0] if custom_gps else DEFAULT_GPS_LAT
-            lon = custom_gps[1] if custom_gps else DEFAULT_GPS_LON
-            cmd_mov_gps = [
-                self.exiftool_path,
-                "-overwrite_original",
-                f"-GPSCoordinates={lat}, {lon}, {DEFAULT_GPS_ALT}",
-                str(out_mov)
-            ]
-            subprocess.run(cmd_mov_gps, capture_output=True, text=True)
+            # 9. Handle GPS on MOV
+            if no_gps:
+                cmd_mov_gps = [
+                    self.exiftool_path,
+                    "-overwrite_original",
+                    "-GPSCoordinates=",
+                    str(tmp_mov)
+                ]
+                subprocess.run(cmd_mov_gps, capture_output=True, text=True)
+            else:
+                lat = custom_gps[0] if custom_gps else DEFAULT_GPS_LAT
+                lon = custom_gps[1] if custom_gps else DEFAULT_GPS_LON
+                cmd_mov_gps = [
+                    self.exiftool_path,
+                    "-overwrite_original",
+                    f"-GPSCoordinates={lat}, {lon}, {DEFAULT_GPS_ALT}",
+                    str(tmp_mov)
+                ]
+                subprocess.run(cmd_mov_gps, capture_output=True, text=True)
 
-        zip_file_path = None
-        if create_zip:
-            zip_file_path = out_directory / f"{base_stem}_livephoto.zip"
-            with zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                # 1. Native Apple Live Photo bundle structure (.pvt) for Shortcuts recognition
-                zf.write(out_jpg, arcname=f"{base_stem}.pvt/{base_stem}.JPG")
-                zf.write(out_mov, arcname=f"{base_stem}.pvt/{base_stem}.MOV")
-                # 2. Root files for direct file access
-                zf.write(out_jpg, arcname=f"{base_stem}.JPG")
-                zf.write(out_mov, arcname=f"{base_stem}.MOV")
+            zip_file_path = None
+            if create_zip:
+                zip_file_path = out_directory / f"{base_stem}_livephoto.zip"
+                with zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                    # 1. Native Apple Live Photo bundle structure (.pvt) for Shortcuts recognition
+                    zf.write(tmp_jpg, arcname=f"{base_stem}.pvt/{base_stem}.JPG")
+                    zf.write(tmp_mov, arcname=f"{base_stem}.pvt/{base_stem}.MOV")
+                    # 2. Root files for direct file access
+                    zf.write(tmp_jpg, arcname=f"{base_stem}.JPG")
+                    zf.write(tmp_mov, arcname=f"{base_stem}.MOV")
 
-        return {
-            "uuid": live_uuid,
-            "jpg_path": str(out_jpg),
-            "mov_path": str(out_mov),
-            "zip_path": str(zip_file_path) if zip_file_path else None,
-            "width": int(width),
-            "height": int(height),
-            "has_gps": not no_gps,
-        }
+            final_jpg = None
+            final_mov = None
+            if keep_loose:
+                final_jpg = out_directory / f"{base_stem}.JPG"
+                final_mov = out_directory / f"{base_stem}.MOV"
+                shutil.copy2(tmp_jpg, final_jpg)
+                shutil.copy2(tmp_mov, final_mov)
+
+            return {
+                "uuid": live_uuid,
+                "jpg_path": str(final_jpg) if final_jpg else None,
+                "mov_path": str(final_mov) if final_mov else None,
+                "zip_path": str(zip_file_path) if zip_file_path else None,
+                "width": int(width),
+                "height": int(height),
+                "has_gps": not no_gps,
+            }
