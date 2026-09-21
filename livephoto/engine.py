@@ -103,9 +103,11 @@ class LivePhotoEngine:
         custom_gps: Optional[Tuple[float, float]] = None,
         create_zip: bool = True,
         keep_loose: bool = False,
+        max_duration: Optional[float] = 3.0,
     ) -> Dict[str, Any]:
         """
         Converts input video into Live Photo wallpaper assets.
+        By default, duration is conformed to Apple Live Photo wallpaper baseline (max_duration=3.0s).
         By default (keep_loose=False), intermediate JPG/MOV files are kept in a temp
         directory and ONLY a clean .zip package is placed into output_dir.
         """
@@ -142,9 +144,14 @@ class LivePhotoEngine:
                 raise RuntimeError(f"FFmpeg frame extraction failed:\n{res_frame.stderr}")
 
             # 3. Mux video with capsule mebx motion tracks via passthrough copy
+            # Strictly conform duration to 3.0s (authentic Apple Live Photo wallpaper benchmark)
             cmd_mux = [
                 self.ffmpeg_path,
                 "-y",
+            ]
+            if max_duration and max_duration > 0:
+                cmd_mux.extend(["-ss", "0", "-t", str(max_duration)])
+            cmd_mux.extend([
                 "-i", str(src_path),
                 "-i", capsule_mov,
                 "-map", "0:v",
@@ -153,7 +160,7 @@ class LivePhotoEngine:
                 "-c", "copy",
                 "-movflags", "+faststart",
                 str(tmp_mov)
-            ]
+            ])
             res_mux = subprocess.run(cmd_mux, capture_output=True, text=True)
             if res_mux.returncode != 0:
                 raise RuntimeError(f"FFmpeg stream mux failed:\n{res_mux.stderr}")

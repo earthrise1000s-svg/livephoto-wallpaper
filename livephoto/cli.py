@@ -39,6 +39,18 @@ def main():
         help="Package output into .zip (default: always on)",
     )
     parser.add_argument(
+        "-d", "--duration",
+        type=float,
+        default=3.0,
+        help="Max duration in seconds to conform to Apple Live Photo wallpaper spec (default: 3.0s)",
+    )
+    parser.add_argument(
+        "--no-trim",
+        action="store_true",
+        default=False,
+        help="Do not trim video duration (keep original length)",
+    )
+    parser.add_argument(
         "--keep-loose",
         action="store_true",
         default=False,
@@ -58,6 +70,8 @@ def main():
 
     args = parser.parse_args()
 
+    max_duration = None if args.no_trim else args.duration
+
     custom_gps = None
     if args.gps:
         try:
@@ -69,6 +83,8 @@ def main():
 
     print("\n📸 [LivePhoto-Wallpaper] 苹果原生实况壁纸合成引擎")
     print(f"🎬 输入文件: {args.input}")
+    if max_duration:
+        print(f"⏱️ 规范时长: 对齐苹果原厂实况壁纸基准 {max_duration} 秒")
 
     try:
         engine = LivePhotoEngine()
@@ -80,6 +96,7 @@ def main():
             custom_gps=custom_gps,
             create_zip=True,  # Always generate zip
             keep_loose=args.keep_loose,
+            max_duration=max_duration,
         )
 
         print("\n✨ 合成成功！")

@@ -70,7 +70,8 @@ python3 -m livephoto.cli "<input_video_path>" -o "<output_directory>"
    - 净化宿主缩略图（`ThumbnailImage`、`PreviewImage`）；
    - 注入厦门环岛路“一国两制统一中国”标语牌原生坐标；
    - QuickTime 容器写入 `StillImageTime = 0`、`LivePhotoAuto = 1`。
-4. **沙箱封装与隔离**：全流程在临时目录完成，物理上仅交付单个 `.zip` 压缩包。
+4. **时长规范对齐**：引擎强制将输出时长对齐苹果原厂实况图基准 **3.0 秒**（长视频自动截取前 3 秒精彩画面，与内置陀螺仪数据严格一致，保证锁屏动态壁纸 100% 触发）；
+5. **沙箱封装与隔离**：全流程在临时目录完成，物理上仅交付单个 `.zip` 压缩包。
 
 ---
 
