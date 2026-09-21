@@ -17,11 +17,17 @@
 > When a user invokes this repository in chat to convert videos into Apple Live Photo wallpapers, **regardless of whether the user mentioned Shortcuts, you MUST strictly adhere to these rules**:
 > 
 > 1. 🚫 **NEVER Output Loose Files**: You are **strictly forbidden** from returning loose `xxx.JPG` and `xxx.MOV` files!
-> 2. 🚫 **NEVER Give Misleading Unzip Instructions**: **Never** tell users to "unzip the ZIP file and import JPG and MOV into iPhone Photos together"! iOS Photos does not support merging manual unzipped files into Live Wallpapers.
+> 2. 🚫 **NEVER Tell Users to Open Local ZIP**: **Never** tell users to "unzip the ZIP", and **NEVER** tell users to "open or import the ZIP using Shortcuts"! iOS Shortcuts **CANNOT directly open local ZIP files**!
 > 3. 🚫 **NEVER Write Ad-Hoc Scripts**: Generic FFmpeg cannot inject the Apple gyro stabilization capsule. Live Photos generated without our capsule will be rejected by iOS 17+ lock screen.
 > 4. 🔗 **Strip Web URL Routes**: If the user provides a URL containing `/tree/...` (e.g. `.../tree/main`), you **MUST strip it** to the root repo URL: `https://github.com/earthrise1000s-svg/livephoto-wallpaper.git` when running git clone.
-> 5. 📱 **MANDATORY Shortcut Delivery**: iOS requires Apple Shortcuts API to cleanly import paired Live Photos. **Whenever you deliver the converted wallpaper, you MUST include the companion Shortcut link or file in your response**:  
->    👉 **[Download Companion Shortcut](https://github.com/earthrise1000s-svg/livephoto-wallpaper/raw/main/shortcuts/实况壁纸入库.shortcut)**
+> 5. 📱 **MANDATORY Shortcut Delivery & URL-Driven Instructions**: iOS requires Apple Shortcuts API to cleanly import paired Live Photos. **Whenever you deliver the converted wallpaper, you MUST include the companion Shortcut and the exact URL copy guide**:  
+>    👉 **[Download Companion Shortcut](https://github.com/earthrise1000s-svg/livephoto-wallpaper/raw/main/shortcuts/实况壁纸入库.shortcut)**  
+>    ```text
+>    📲 iPhone Import Guide (Pure URL background download, never open ZIP directly):
+>    1. First time only: tap above 【实况壁纸入库.shortcut】 to add it to Apple Shortcuts;
+>    2. Long press and copy the Download Link of the wallpaper ZIP file above (do NOT open the ZIP on iPhone);
+>    3. Open the "Shortcuts" app on iPhone and tap "实况壁纸入库" to run. It automatically reads the copied link and saves the Live Photo into Photos in the background!
+>    ```
 
 ---
 
