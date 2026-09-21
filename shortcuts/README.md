@@ -17,43 +17,39 @@
 
 ---
 
-## ⚙️ 快捷指令内部完整动作链（URL 全自动流式入库）
+## ⚙️ 快捷指令内部完整动作链（直接适配本地“文件”App 已下载的 ZIP）
 
-快捷指令采用纯 URL 驱动，**用户完全无需手动下载 ZIP 压缩包**，全流程在后台静默全自动完成：
+无论您是直接在快捷指令 App 中运行，还是在手机“文件”App 中分享，均已原生无缝支持：
 
 ```text
-1. 接收输入 (接收 AI 提供的壁纸包 URL 链接)
+1. 运行【实况壁纸入库】快捷指令
        │
        ▼
-2. 识别链接 (is.workflow.actions.detect.link)
+2. 自动弹出原生文件选取框（is.workflow.actions.file.select）
+   （直接在手机“文件”App 列表中点一下刚下载的 xxx_livephoto.zip）
        │
        ▼
-3. 后台静默下载压缩包 (is.workflow.actions.downloadurl)
+3. 快捷指令自动解压实况 Bundle（is.workflow.actions.unarchive）
+   （自动释放内置的 .pvt 苹果原生 Live Photo 包）
        │
        ▼
-4. 自动解压实况 Bundle (is.workflow.actions.unarchive)
-   (自动释放 .pvt/ 苹果原生实况包与配对 .JPG/.MOV)
+4. 存入系统相册（is.workflow.actions.savetocameraroll）
+   （原子级写入 iOS 相册，保留完整防抖参数与锁屏动态效果）
        │
        ▼
-5. 原子级存入系统相册 (is.workflow.actions.savetocameraroll)
-   (识别 com.apple.live-photo 类型，直接写入相册底表)
-       │
-       ▼
-6. 成功弹窗提示 (is.workflow.actions.notification)
-   (弹窗提示：“实况壁纸入库成功 🎉，已存入相册，可前往【设置 -> 墙纸】应用”)
+5. 成功弹窗提示（is.workflow.actions.notification）
+   （弹窗提示：“实况壁纸入库成功 🎉，已存入相册，可前往【设置 -> 墙纸】应用”）
 ```
 
 ---
 
-## 🔗 自动化呼起 Magic Link
+## 📱 极简使用流程（仅需 2 步）
 
-AI Agent 生成实况壁纸包后，直接向用户提供专属唤醒链接。用户在 iPhone 轻点链接即可全自动入库：
+1. **添加快捷指令（仅需一次）**：  
+   点击上方链接 👉 **[下载【实况壁纸入库.shortcut】](https://github.com/earthrise1000s-svg/livephoto-wallpaper/raw/main/shortcuts/实况壁纸入库.shortcut)** 添加到 iPhone。
+2. **存入相册**：  
+   - 在手机上打开**「快捷指令」App**；
+   - 点击运行 **【实况壁纸入库】**；
+   - 屏幕会自动弹出文件选取面板，**点一下刚下载保存在“文件”App 中的 `xxx_livephoto.zip` 压缩包**；
+   - 快捷指令便会自动将其解包并保存为实况照片写入相册！
 
-```text
-shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_DIRECT_URL>
-```
-
-**极简闭环体验**：
-- 用户**无需点击下载文件**；
-- 用户**无需打开 iOS 文件 App**；
-- 仅需在聊天窗口点击一下链接（或长按复制 URL 打开快捷指令），实况壁纸瞬间存入相册！

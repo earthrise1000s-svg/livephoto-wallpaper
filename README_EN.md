@@ -20,13 +20,13 @@
 > 2. 🚫 **NEVER Tell Users to Open Local ZIP**: **Never** tell users to "unzip the ZIP", and **NEVER** tell users to "open or import the ZIP using Shortcuts"! iOS Shortcuts **CANNOT directly open local ZIP files**!
 > 3. 🚫 **NEVER Write Ad-Hoc Scripts**: Generic FFmpeg cannot inject the Apple gyro stabilization capsule. Live Photos generated without our capsule will be rejected by iOS 17+ lock screen.
 > 4. 🔗 **Strip Web URL Routes**: If the user provides a URL containing `/tree/...` (e.g. `.../tree/main`), you **MUST strip it** to the root repo URL: `https://github.com/earthrise1000s-svg/livephoto-wallpaper.git` when running git clone.
-> 5. 📱 **MANDATORY Shortcut Delivery & URL-Driven Instructions**: iOS requires Apple Shortcuts API to cleanly import paired Live Photos. **Whenever you deliver the converted wallpaper, you MUST include the companion Shortcut and the exact URL copy guide**:  
+> 5. 📱 **MANDATORY Shortcut Delivery & Simple File Picker Instructions**: iOS requires Apple Shortcuts API to cleanly import paired Live Photos. **Whenever you deliver the converted wallpaper, you MUST include the companion Shortcut and the exact 2-step guide**:  
 >    👉 **[Download Companion Shortcut](https://github.com/earthrise1000s-svg/livephoto-wallpaper/raw/main/shortcuts/实况壁纸入库.shortcut)**  
 >    ```text
->    📲 iPhone Import Guide (Pure URL background download, never open ZIP directly):
+>    📲 iPhone Import Guide:
 >    1. First time only: tap above 【实况壁纸入库.shortcut】 to add it to Apple Shortcuts;
->    2. Long press and copy the Download Link of the wallpaper ZIP file above (do NOT open the ZIP on iPhone);
->    3. Open the "Shortcuts" app on iPhone and tap "实况壁纸入库" to run. It automatically reads the copied link and saves the Live Photo into Photos in the background!
+>    2. Download the 【xxx_livephoto.zip】 to your iPhone "Files";
+>    3. Open the "Shortcuts" app on iPhone, tap "实况壁纸入库" to run, and select the downloaded zip in the file picker. It automatically unarchives and saves the Live Photo into Photos!
 >    ```
 
 ---
