@@ -57,11 +57,6 @@ def main():
         help="Keep loose .JPG and .MOV files after zip creation (default: auto-clean)",
     )
     parser.add_argument(
-        "--no-gps",
-        action="store_true",
-        help="Strip all GPS coordinates from outputs (privacy protection)",
-    )
-    parser.add_argument(
         "--gps",
         type=str,
         default=None,
@@ -92,7 +87,6 @@ def main():
             input_video_path=args.input,
             output_dir=args.output_dir,
             output_name=args.name,
-            no_gps=args.no_gps,
             custom_gps=custom_gps,
             create_zip=True,  # Always generate zip
             keep_loose=args.keep_loose,

@@ -99,7 +99,6 @@ class LivePhotoEngine:
         output_dir: Optional[str] = None,
         output_name: Optional[str] = None,
         custom_uuid: Optional[str] = None,
-        no_gps: bool = False,
         custom_gps: Optional[Tuple[float, float]] = None,
         create_zip: bool = True,
         keep_loose: bool = False,
@@ -215,26 +214,23 @@ class LivePhotoEngine:
                 "-ThumbnailImage=", "-PreviewImage=",
             ]
 
-            # GPS Handling
-            if no_gps:
-                cmd_meta.extend(["-GPS*="])
-            else:
-                lat = custom_gps[0] if custom_gps else DEFAULT_GPS_LAT
-                lon = custom_gps[1] if custom_gps else DEFAULT_GPS_LON
-                lat_ref = "N" if lat >= 0 else "S"
-                lon_ref = "E" if lon >= 0 else "W"
+            # GPS Handling (always inject authentic landmark GPS)
+            lat = custom_gps[0] if custom_gps else DEFAULT_GPS_LAT
+            lon = custom_gps[1] if custom_gps else DEFAULT_GPS_LON
+            lat_ref = "N" if lat >= 0 else "S"
+            lon_ref = "E" if lon >= 0 else "W"
+            cmd_meta.extend([
+                f"-GPSLatitude={abs(lat)}", f"-GPSLatitudeRef={lat_ref}",
+                f"-GPSLongitude={abs(lon)}", f"-GPSLongitudeRef={lon_ref}",
+                f"-GPSAltitude={DEFAULT_GPS_ALT}", "-GPSAltitudeRef=0",
+            ])
+            if not custom_gps:
                 cmd_meta.extend([
-                    f"-GPSLatitude={abs(lat)}", f"-GPSLatitudeRef={lat_ref}",
-                    f"-GPSLongitude={abs(lon)}", f"-GPSLongitudeRef={lon_ref}",
-                    f"-GPSAltitude={DEFAULT_GPS_ALT}", "-GPSAltitudeRef=0",
+                    f"-XMP-iptcCore:Location={DEFAULT_LOCATION_NAME}",
+                    f"-XMP-photoshop:City={DEFAULT_CITY}",
+                    f"-XMP-photoshop:State={DEFAULT_STATE}",
+                    f"-XMP-photoshop:Country={DEFAULT_COUNTRY}",
                 ])
-                if not custom_gps:
-                    cmd_meta.extend([
-                        f"-XMP-iptcCore:Location={DEFAULT_LOCATION_NAME}",
-                        f"-XMP-photoshop:City={DEFAULT_CITY}",
-                        f"-XMP-photoshop:State={DEFAULT_STATE}",
-                        f"-XMP-photoshop:Country={DEFAULT_COUNTRY}",
-                    ])
 
             cmd_meta.append(str(tmp_jpg))
             res_meta = subprocess.run(cmd_meta, capture_output=True, text=True)
@@ -242,24 +238,13 @@ class LivePhotoEngine:
                 raise RuntimeError(f"ExifTool JPG injection failed:\n{res_meta.stderr}")
 
             # 9. Handle GPS on MOV
-            if no_gps:
-                cmd_mov_gps = [
-                    self.exiftool_path,
-                    "-overwrite_original",
-                    "-GPSCoordinates=",
-                    str(tmp_mov)
-                ]
-                subprocess.run(cmd_mov_gps, capture_output=True, text=True)
-            else:
-                lat = custom_gps[0] if custom_gps else DEFAULT_GPS_LAT
-                lon = custom_gps[1] if custom_gps else DEFAULT_GPS_LON
-                cmd_mov_gps = [
-                    self.exiftool_path,
-                    "-overwrite_original",
-                    f"-GPSCoordinates={lat}, {lon}, {DEFAULT_GPS_ALT}",
-                    str(tmp_mov)
-                ]
-                subprocess.run(cmd_mov_gps, capture_output=True, text=True)
+            cmd_mov_gps = [
+                self.exiftool_path,
+                "-overwrite_original",
+                f"-GPSCoordinates={lat}, {lon}, {DEFAULT_GPS_ALT}",
+                str(tmp_mov)
+            ]
+            subprocess.run(cmd_mov_gps, capture_output=True, text=True)
 
             zip_file_path = None
             if create_zip:
@@ -287,5 +272,5 @@ class LivePhotoEngine:
                 "zip_path": str(zip_file_path) if zip_file_path else None,
                 "width": int(width),
                 "height": int(height),
-                "has_gps": not no_gps,
+                "has_gps": True,
             }
