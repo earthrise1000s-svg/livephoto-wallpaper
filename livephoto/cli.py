@@ -3,6 +3,7 @@ Command Line Interface for LivePhoto-Wallpaper.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from .engine import LivePhotoEngine, LivePhotoInputError
 def main():
     parser = argparse.ArgumentParser(
         prog="livephoto",
-        description="Convert any video into an authentic iOS 17+ Live Wallpaper (paired .JPG + .MOV)",
+        description="Convert any video into an authentic iOS 27 Live Wallpaper (.zip package for Shortcuts import)",
     )
     parser.add_argument(
         "input",
@@ -34,7 +35,14 @@ def main():
     parser.add_argument(
         "-z", "--zip",
         action="store_true",
-        help="Package output pair into a .zip file for easy iOS Shortcuts import",
+        default=True,
+        help="Package output into .zip (default: always on)",
+    )
+    parser.add_argument(
+        "--keep-loose",
+        action="store_true",
+        default=False,
+        help="Keep loose .JPG and .MOV files after zip creation (default: auto-clean)",
     )
     parser.add_argument(
         "--no-gps",
@@ -70,16 +78,21 @@ def main():
             output_name=args.name,
             no_gps=args.no_gps,
             custom_gps=custom_gps,
-            create_zip=args.zip,
+            create_zip=True,  # Always generate zip
         )
 
-        print("\n✨ 合成成功！生成文件如下：")
-        print(f"  🖼️  封面图片: {res['jpg_path']} ({res['width']}x{res['height']})")
-        print(f"  🎥 动态视频: {res['mov_path']}")
+        # Auto-clean loose JPG and MOV files (only keep zip)
+        if not args.keep_loose and res["zip_path"]:
+            for loose_file in [res["jpg_path"], res["mov_path"]]:
+                try:
+                    os.remove(loose_file)
+                except OSError:
+                    pass
+
+        print("\n✨ 合成成功！")
+        print(f"  📦 壁纸包: {res['zip_path']}")
         print(f"  🔑 实况标识: {res['uuid']}")
-        if res["zip_path"]:
-            print(f"  📦 压缩打包: {res['zip_path']}")
-        print("\n🎉 提示: 将配对文件导入 iPhone 相册即可直接设置为锁屏实况动态壁纸！\n")
+        print("\n🎉 将壁纸包通过快捷指令一键导入 iPhone 相册即可设为锁屏动态壁纸！\n")
 
     except LivePhotoInputError as e:
         print(f"\n{e}\n")

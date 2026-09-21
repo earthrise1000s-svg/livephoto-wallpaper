@@ -73,28 +73,23 @@ python3 -m livephoto.cli "<input_video_path>" -o "<output_directory>" -z
 
 ---
 
-## 阶段四：成果交付与二次引导闭环
+## 阶段四：成果交付（极简闭环，严禁散件输出）
 
-合成完成后，Agent 必须根据用户在阶段一的选择提供针对性交付体验：
+> [!IMPORTANT]
+> **铁律：严禁向用户单独展示或发送 `.JPG` 和 `.MOV` 文件！**  
+> 普通用户面对散件文件会不知所措，且手动分别保存会被 iOS 识别为两份独立文件，无法触发实况壁纸效果。  
+> 最终交付界面**有且仅有以下两个元素**：
 
-### 场景 A：用户已添加快捷指令（丝滑一键入相册）
+合成完成后，Agent **必须且仅可**输出以下模板（禁止额外附加任何 JPG / MOV 独立文件）：
+
 ```text
-✨ 您的原生实况壁纸已制作完成！
-- 封面图：[查看 JPG 封面](file:///path/to/IMG.JPG)
-- 视频轨：[查看 MOV 视频](file:///path/to/IMG.MOV)
+✨ 实况壁纸制作完成！
 
-👉 点击下方链接一键保存到iPhone相册：
-[【一键导入手机相册】](shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_URL>)
-```
+👉 【一键存入 iPhone 相册】
+shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_DOWNLOAD_URL>
 
-### 场景 B：用户选择“暂不添加”（兜底安全警示）
-```text
-✨ 您的原生实况壁纸已制作完成！
-- 压缩包下载：[点击下载实况壁纸包 (Zip)](file:///path/to/IMG_livephoto.zip)
-- 独立文件下载：[JPG 封面](file:///path/to/IMG.JPG) | [MOV 视频](file:///path/to/IMG.MOV)
+还没装快捷指令？👉 【点此 1 秒添加】
+shortcuts://import-shortcut?url=<SHORTCUT_RAW_URL>&name=实况壁纸入库
 
-👉 [点此下载【实况壁纸入库】快捷指令一键保存](https://github.com/earthrise1000s-svg/livephoto-wallpaper/raw/main/shortcuts/实况壁纸入库.shortcut)
-
-⚠️ 重要提醒：
-若手动将 JPG 和 MOV 分别单独保存到手机相册，会被 iOS 识别为两份独立的普通文件，无法触发锁屏动态壁纸效果！强烈建议使用快捷指令一键入库。
+存入成功后，前往 iPhone【设置 -> 墙纸】长按即可体验完美动态锁屏壁纸！
 ```

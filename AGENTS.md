@@ -59,22 +59,26 @@
 ```bash
 python3 -m livephoto.cli "<input_video_path>" -o "<output_dir>" -z
 ```
-- 自动提取第 0 帧作为绝对对齐封面；
-- 注入极稳 mebx 陀螺仪防抖数据与 iPhone 计算摄影元数据；
-- 输出配对的 `.JPG`、`.MOV` 以及方便快捷指令一键解压的 `.zip` 压缩包。
+引擎默认强制生成 `.zip` 壁纸包（内含配对的 JPG + MOV），零散的独立文件会自动清理。
 
 ---
 
-### 第四步：交付与一键入库
+### 第四步：交付（极简闭环，严禁散件输出）
 
-转换完成后，Agent 向用户交付成果：
-1. 提供制作完成的 Live Photo 压缩包下载；
-2. 提供一键存入相册动作链接：
-   ```text
-   ✨ 实况壁纸已制作完成！
-   
-   👉 点击下方链接一键导入 iPhone 相册：
-   shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_FILE_OR_URL>
-   
-   导入成功后，前往 iPhone【设置 -> 墙纸】长按即可体验完美动态锁屏壁纸！
-   ```
+> [!IMPORTANT]
+> **铁律：严禁向用户单独展示或发送 `.JPG` 和 `.MOV` 散件文件！**  
+> 普通用户面对散件文件会不知所措，且手动分别保存会被 iOS 识别为两份独立文件，无法触发实况壁纸效果。  
+> **无论用户以何种方式发起（首次/非首次/直接丢视频），最终交付界面有且仅有以下内容**：
+
+合成完成后，Agent **必须且仅可**输出以下模板：
+```text
+✨ 实况壁纸制作完成！
+
+👉 【一键存入 iPhone 相册】
+shortcuts://run-shortcut?name=实况壁纸入库&input=text&text=<ZIP_DOWNLOAD_URL>
+
+还没装快捷指令？👉 【点此 1 秒添加】
+shortcuts://import-shortcut?url=<SHORTCUT_RAW_URL>&name=实况壁纸入库
+
+存入成功后，前往 iPhone【设置 -> 墙纸】长按即可体验完美动态锁屏壁纸！
+```
